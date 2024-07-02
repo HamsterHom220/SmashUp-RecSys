@@ -5,11 +5,19 @@ from sklearn.neighbors import NearestNeighbors
 import numpy as np
 from tqdm import tqdm
 import pickle
+from flask import Flask, request, abort
 
 
 class MashupRecSys:
-    def __init__(self):
+    def __init__(self,username,password,host,port,db):
         self.cnx = None
+        self.db_config = {
+            'user': username,
+            'password': password,
+            'host': host,
+            'port': port,
+            'database': db
+        }
         self.params_default = {
             'liked_pop_size': 3,
             'most_listened_pop_size': 3,
@@ -31,11 +39,8 @@ class MashupRecSys:
 
     def connect_to_db(self):
         try:
-            self.cnx = mysql.connector.connect(
-                user='root', password='x155564py',
-                host='127.0.0.1', port=3307,
-                database='smashup'
-            )
+            self.cnx = mysql.connector.connect(**self.db_config)
+            return True
         except mysql.connector.Error as err:
             if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
                 print("Something is wrong with the username or password")
@@ -43,6 +48,7 @@ class MashupRecSys:
                 print("Database does not exist")
             else:
                 print(err)
+        return False
 
     def query_db(self, query: str):
         if self.cnx and self.cnx.is_connected():
@@ -52,7 +58,8 @@ class MashupRecSys:
             return rows
         return None
 
-    def multifeature_encoder(self, values, ids, num_unique_values=None, num_unique_ids=None):
+    @staticmethod
+    def multifeature_encoder(values, ids, num_unique_values=None, num_unique_ids=None):
         # inputs - vectors, not ndarrays
         values_enum = dict([(i[1], i[0]) for i in enumerate(np.unique(values))])
         if num_unique_values is None:
@@ -319,14 +326,60 @@ class MashupRecSys:
             if ind >= len(self.available_mashup_ids):
                 print(f'Warning! Recommended mashup index {ind} is out of bounds.')
             else:
-                res.append(self.available_mashup_ids[ind][0])
+                res.append(int(self.available_mashup_ids[ind][0]))
 
         print(f'Successfully generated a recommendation list for user {user_id}.')
         return res
 
 
-# TEST
+app = Flask(__name__)
+app.config.from_object(__name__)
+
+
+@app.route('/')
+def init_recsys():
+    try:
+        username = request.args.get('username')
+        password = request.args.get('password')
+        host = request.args.get('host')
+        port = int(request.args.get('port'))
+        db = request.args.get('db')
+        app.recsys = MashupRecSys(username,password,host,port,db)
+        return '<h1>200 Successfully initialized the RecSys object.</h1>', 200
+    except:
+        abort(401)
+
+
+@app.route('/train', methods=['GET','POST'])
+def train():
+    try:
+        app.recsys.retrain_model()
+        return '<h1>200 Successfully started training.</h1>', 200
+    except:
+        abort(500)
+
+
+@app.route('/recommend', methods=['GET','POST'])
+def recommend():
+    user_id = 0
+    params = dict()
+    try:
+        user_id = int(request.args.get('id'))
+        for key in app.recsys.params_default.keys():
+            if request.args.get(key) is not None:
+                params[key] = int(request.args.get(key))
+    except:
+        abort(400)
+
+    try:
+        lst = app.recsys.get_rec_list(user_id, **params)
+        return {"recs": lst}, 200
+    except:
+        abort(500)
+
+
 if __name__ == '__main__':
-    recsys = MashupRecSys()
-    recsys.retrain_model()
-    print(recsys.get_rec_list(2))
+    # recsys = MashupRecSys(username='root', password='x155564py', host='127.0.0.1', port=3307, db='smashup')
+    # recsys.retrain_model()
+    # res = recsys.get_rec_list(2)
+    app.run(port=5000)
