@@ -1,0 +1,6 @@
+.ipynb_checkpoints
+*.sql
+*.png
+.idea
+*.ipynb
+*.md

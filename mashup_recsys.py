@@ -6,18 +6,12 @@ import numpy as np
 from tqdm import tqdm
 import pickle
 from flask import Flask, request, abort
+import os
 
 
 class MashupRecSys:
-    def __init__(self,username,password,host,port,db):
+    def __init__(self):
         self.cnx = None
-        self.db_config = {
-            'user': username,
-            'password': password,
-            'host': host,
-            'port': port,
-            'database': db
-        }
         self.params_default = {
             'liked_pop_size': 3,
             'most_listened_pop_size': 3,
@@ -38,17 +32,11 @@ class MashupRecSys:
             self.available_mashup_ids = np.load(f)
 
     def connect_to_db(self):
-        try:
-            self.cnx = mysql.connector.connect(**self.db_config)
-            return True
-        except mysql.connector.Error as err:
-            if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-                print("Something is wrong with the username or password")
-            elif err.errno == errorcode.ER_BAD_DB_ERROR:
-                print("Database does not exist")
-            else:
-                print(err)
-        return False
+        self.cnx = mysql.connector.connect(
+            user=os.environ.get('MYSQL_USER'), password=os.environ.get('MYSQL_PASSWORD'),
+            host=os.environ.get('MYSQL_HOST'), port=int(os.environ.get('MYSQL_PORT')),
+            database=os.environ.get('MYSQL_DATABASE')
+        )
 
     def query_db(self, query: str):
         if self.cnx and self.cnx.is_connected():
@@ -339,12 +327,7 @@ app.config.from_object(__name__)
 @app.route('/')
 def init_recsys():
     try:
-        username = request.args.get('username')
-        password = request.args.get('password')
-        host = request.args.get('host')
-        port = int(request.args.get('port'))
-        db = request.args.get('db')
-        app.recsys = MashupRecSys(username,password,host,port,db)
+        app.recsys = MashupRecSys()
         return '<h1>200 Successfully initialized the RecSys object.</h1>', 200
     except:
         abort(401)
@@ -378,8 +361,15 @@ def recommend():
         abort(500)
 
 
+@app.route('/check', methods=['GET'])
+def check():
+    app.recsys.connect_to_db()
+    app.recsys.cnx.close()
+    return '<h1>200 DB connection is OK.</h1>', 200
+
+
 if __name__ == '__main__':
-    # recsys = MashupRecSys(username='root', password='x155564py', host='127.0.0.1', port=3307, db='smashup')
+    # recsys = MashupRecSys()
     # recsys.retrain_model()
     # res = recsys.get_rec_list(2)
-    app.run(port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=True) # values reserved for container

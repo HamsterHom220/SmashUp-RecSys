@@ -1,0 +1,21 @@
+services:
+  recsys:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - type: bind
+        source: ./knn_pretrained
+        target: /data/app/knn_pretrained
+      - type: bind
+        source: ./ind_to_mashup_id.npy
+        target: /data/app/ind_to_mashup_id.npy
+    ports:
+      - 3307:3307
+      - 5000:5000
+    networks:
+      - mynetwork
+
+networks:
+  mynetwork:
+    driver: bridge

@@ -1,11 +1,10 @@
 <h1>API</h1>
 
-1. <b>GET /?username=<i>root</i>&password=<i>x155564py</i>
-&host=<i>127.0.0.1</i>&port=<i>3307</i>&db=<i>smashup</i></b> -
-initialize the RecSys with provided db config data.
+1. <b>GET / -
+initialize the RecSys (always send this as the first request).
 
 2. <b>GET /train</b> - retrain the model if needed (for example, if a lot of new
-mashups have arrived to the database)
+mashups have arrived to the database).
 
 3. <b>GET /recommend?id=<i>666</i></b> -
 get the recommendations list in form of json containing mashup ids
@@ -36,3 +35,4 @@ i.e. the values provided apply only for the current request):
     
     Note that such big parameter values may increase
 execution time drastically!
+4. <b>GET /check</b> - check the connection between RecSys and DB.
