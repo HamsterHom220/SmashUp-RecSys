@@ -4,3 +4,4 @@
 .idea
 *.ipynb
 *.md
+.env

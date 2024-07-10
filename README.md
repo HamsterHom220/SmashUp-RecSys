@@ -6,8 +6,8 @@ initialize the RecSys (always send this as the first request).
 2. <b>GET /train</b> - retrain the model if needed (for example, if a lot of new
 mashups have arrived to the database).
 
-3. <b>GET /recommend?id=<i>666</i></b> -
-get the recommendations list in form of json containing mashup ids
+3. <b>GET /recommend?id=<i>666</i>&lim=<i>13</i></b> -
+get the recommendations list of size limited by <b>lim</b> (by default it is 15) in form of json containing mashup ids
 for the provided user id. Optionally, you may provide custom values for
 any of the following parameters
 (it will not override the default values shown below, 
@@ -30,7 +30,7 @@ i.e. the values provided apply only for the current request):
     ```
     For example,
     
-    <b>GET /recommend?id=<i>666</i>&base_l_neighb=<i>228</i>
+    <b>GET /recommend?id=<i>666</i>&lim=<i>13</i>&base_l_neighb=<i>228</i>
     &author_cand_lim=<i>69</i></b>
     
     Note that such big parameter values may increase
